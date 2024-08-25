@@ -78,6 +78,15 @@ wss.on('connection', function connection(userSocket) {
 })
 })
 
+wss.on('close', function close() {
+  //clear all the subscriptions
+  Object.keys(subscriptions).forEach(userId=>{
+   //unsubscribe all the rooms
+   subscriptions[userId].rooms.forEach(room=>{
+       subscribeClient.unsubscribe(room)
+   })
+  })
+});
 function oneUserSubscribedTo(roomId:string){
     let totalInterestedPeople=0;
     console.log("checking if one user is subscribed to room "+roomId)

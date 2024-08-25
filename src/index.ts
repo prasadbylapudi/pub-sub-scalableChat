@@ -1,5 +1,5 @@
 import WebSocket, { WebSocketServer } from 'ws';
-const wss = new WebSocketServer({ port: 5001 });
+const wss = new WebSocketServer({ port: 5000 });
 
 import { subscribeClient,publishClient } from './RedisManager';
 
@@ -25,6 +25,7 @@ function generateId(){
 }
 
 wss.on('connection', function connection(userSocket) {
+    console.log("connected")
     const id=generateId()
     subscriptions[id]={
         ws:userSocket,
@@ -32,7 +33,9 @@ wss.on('connection', function connection(userSocket) {
     }
     userSocket.on('message', function message(data) {
     const userMessage = JSON.parse(data as unknown as string);
-        if(userMessage.type==='SUBSCRIBE'){
+        console.log('message',userMessage)
+        if(userMessage.type==="SUBSCRIBE"){
+            console.log("inside subscribe")
                 subscriptions[id].rooms.push(userMessage.room) 
                 //if it's first user then subscribe to the room.
                 //@ts-ignore
@@ -52,13 +55,15 @@ wss.on('connection', function connection(userSocket) {
             }
                 
         };
-        if(userMessage.type==='unsubscribe'){
+        if(userMessage.type==="UNSUBSCRIBE"){
+            console.log("unsubscribing from the pub sub to room "+userMessage.room)
             subscriptions[id].rooms=subscriptions[id].rooms.filter(room=>room!==userMessage.room)
             //@ts-ignore
             if(lastPersonLeftRoom(userMessage.room)){
                 console.log("unsubscribing from the pub sub to room "+userMessage.room)
                 subscribeClient.unsubscribe(userMessage.room)
             }
+
         }
 
         if(userMessage.type==="sendMessage"){
@@ -66,7 +71,7 @@ wss.on('connection', function connection(userSocket) {
             const roomId= userMessage.roomId
             publishClient.publish(roomId,JSON.stringify({
                 type:"sendMessage",
-                room:roomId,
+                roomId:roomId,
                 message
             })) 
         }
